@@ -1,4 +1,4 @@
-# MikrotikScripts
+# Mikrotik scripts
 
 These are scripts I use on Mikrotik routers.
 
