@@ -1,0 +1,65 @@
+#Get voltage date from a Tycon Power TPDIN-Monitor-WEB and upload it to data.sparkfun.com
+#Remember to change settings in :local url bit
+#Public Sream url: https://data.sparkfun.com/streams/[publicKey]
+#Keys
+#Public: [publicKey]
+#Private: [privateKey]
+#Delete: [deleteKey]
+:local url "https://data.sparkfun.com/input/[publicKey]\?private_key=[privateKey]";
+
+:local progName "TPDinMonitor";
+:log info "$progName: Running...";
+
+:local getBetween do={
+	# This is a basic parser, can be used for XML
+	# It takes three parameters:
+	# inputString - The main string
+	# betweenStart - Text AFTER this point will be returned
+	# betweenEnd - Text BEFORE this point will be returned
+	:local posStart 0;
+	:if ([:len $betweenStart] > 0) do={
+	:set posStart [:find $inputString $betweenStart]
+		:if ([:len $posStart] = 0) do={
+			:set posStart 0
+		} else={
+			:set posStart ($posStart + [:len $betweenStart])
+		}
+	}
+
+	:local posEnd 9999;
+	:if ([:len $betweenEnd] > 0) do={
+	:set posEnd [:find $inputString $betweenEnd];
+	:if ([:len $posEnd] = 0) do={ :set posEnd 9999 }
+	}
+
+	:local result [:pick $inputString $posStart $posEnd];
+	:return $result;
+}
+
+#This needs changing per Power Monitor
+:if ([:len [/file find name=status.xml]] > 0) do={/file remove status.xml;};
+
+/tool fetch url="http://[TPDinURL]/status.xml" mode=http user=[user] password=[password];
+:delay 1; #This is needed to allow time for the file to save
+:local statusXML [/file get status.xml contents];
+:if ([:len [/file find name=status.xml]] > 0) do={/file remove status.xml};
+
+:if ([:len $statusXML] > 50) do={
+	#Build up the URL
+	:set url ($url . "&led1=" . [$getBetween inputString=$statusXML betweenStart="<led1>" betweenEnd="</led1>"]);
+	:set url ($url . "&led2=" . [$getBetween inputString=$statusXML betweenStart="<led2>" betweenEnd="</led2>"]);
+	:set url ($url . "&led3=" . [$getBetween inputString=$statusXML betweenStart="<led3>" betweenEnd="</led3>"]);
+	:set url ($url . "&led4=" . [$getBetween inputString=$statusXML betweenStart="<led4>" betweenEnd="</led4>"]);
+	:set url ($url . "&volt1=" . [$getBetween inputString=$statusXML betweenStart="<volt1>" betweenEnd="</volt1>"]);
+	:set url ($url . "&volt2=" . [$getBetween inputString=$statusXML betweenStart="<volt2>" betweenEnd="</volt2>"]);
+	:set url ($url . "&volt3=" . [$getBetween inputString=$statusXML betweenStart="<volt3>" betweenEnd="</volt3>"]);
+	:set url ($url . "&volt4=" . [$getBetween inputString=$statusXML betweenStart="<volt4>" betweenEnd="</volt4>"]);
+	:set url ($url . "&amp1=" . [$getBetween inputString=$statusXML betweenStart="<amp1>" betweenEnd="</amp1>"]);
+	:set url ($url . "&amp2=" . [$getBetween inputString=$statusXML betweenStart="<amp2>" betweenEnd="</amp2>"]);
+	:set url ($url . "&amp3=" . [$getBetween inputString=$statusXML betweenStart="<amp3>" betweenEnd="</amp3>"]);
+	:set url ($url . "&amp4=" . [$getBetween inputString=$statusXML betweenStart="<amp4>" betweenEnd="</amp4>"]);
+	:set url ($url . "&temp1=" . [$getBetween inputString=$statusXML betweenStart="<temp1>" betweenEnd="</temp1>"]);
+	:set url ($url . "&temp2=" . [$getBetween inputString=$statusXML betweenStart="<temp2>" betweenEnd="</temp2>"]);
+	/tool fetch keep-result=no url=$url
+}	
+
